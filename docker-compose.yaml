@@ -1,0 +1,12 @@
+services:
+  backend:
+    build: ./backend
+    image: singhvikas872/ecommerce-backend
+    ports:
+      - "5000:5000"
+
+  frontend:
+    build: ./frontend
+    image: singhvikas872/ecommerce-frontend
+    ports:
+      - "3000:80"
