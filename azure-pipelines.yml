@@ -56,7 +56,7 @@ stages:
               versionSpec: "20.x"
             displayName: Use Node 20
 
-          - script: yarn install --frozen-lockfile
+          - script: yarn install
             workingDirectory: frontend
             displayName: Install frontend dependencies
 
