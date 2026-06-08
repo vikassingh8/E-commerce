@@ -1,6 +1,29 @@
-# node-tar CVEs in npm bundled with node:20-alpine
-# These affect npm itself (not our application code).
-# npm is only used during image build; no fix available in any current node:20 image.
+
+
+
+
+
+# All CVEs below are in npm's bundled dependencies (cross-spawn, glob, minimatch, tar)
+# located under usr/local/lib/node_modules/npm/ inside node:20-alpine.
+# These are NOT in our application code. No fixed node:20 image is available yet.
+
+# node-tar CVEs (original set)
 CVE-2026-26960
 CVE-2026-29786
 CVE-2026-31802
+
+# node-tar / tar additional CVEs
+CVE-2026-23745
+CVE-2026-23950
+CVE-2026-24842
+
+# cross-spawn CVE (npm bundled)
+CVE-2024-21538
+
+# glob CVE (npm bundled)
+CVE-2025-64756
+
+# minimatch CVEs (npm bundled)
+CVE-2026-26996
+CVE-2026-27903
+CVE-2026-27904
