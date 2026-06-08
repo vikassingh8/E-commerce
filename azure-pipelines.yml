@@ -1,0 +1,229 @@
+trigger:
+  branches:
+    include:
+      - main
+      - develop
+
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
+variables:
+  - group: ecommerce-keyvault-secrets   # linked to Azure Key Vault in Library
+  - name: ACR_NAME
+    value: ecommercemcs.azurecr.io
+  - name: BACKEND_IMAGE
+    value: ecommercemcs.azurecr.io/ecommerce-backend
+  - name: FRONTEND_IMAGE
+    value: ecommercemcs.azurecr.io/ecommerce-frontend
+  - name: IMAGE_TAG
+    value: $(Build.BuildId)
+
+stages:
+  # ─────────────────────────────────────────────
+  # Stage 1: Build & Test
+  # ─────────────────────────────────────────────
+  - stage: CI
+    displayName: Build and Test
+    jobs:
+      - job: BackendTest
+        displayName: Backend - Install & Test
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "20.x"
+            displayName: Use Node 20
+
+          - script: npm ci --omit=dev
+            workingDirectory: backend
+            displayName: Install backend dependencies
+
+          - script: npm test
+            workingDirectory: backend
+            displayName: Run backend unit tests
+
+      - job: FrontendBuild
+        displayName: Frontend - Install, Test & Build
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: "20.x"
+            displayName: Use Node 20
+
+          - script: yarn install --frozen-lockfile
+            workingDirectory: frontend
+            displayName: Install frontend dependencies
+
+          - script: yarn test
+            workingDirectory: frontend
+            displayName: Run frontend unit tests
+
+          - script: yarn build
+            workingDirectory: frontend
+            displayName: Build frontend
+
+  # ─────────────────────────────────────────────
+  # Stage 2: Docker Build & Push to ACR
+  # ─────────────────────────────────────────────
+  - stage: DockerPush
+    displayName: Docker Build, Scan and Push to ACR
+    dependsOn: CI
+    condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
+    jobs:
+      - job: DockerBuildPush
+        displayName: Build, scan and push images to ACR
+        pool:
+          vmImage: ubuntu-latest
+        steps:
+          - task: Docker@2
+            displayName: Build backend image
+            inputs:
+              containerRegistry: acr-service-connection
+              repository: ecommerce-backend
+              command: build
+              Dockerfile: backend/Dockerfile
+              buildContext: backend
+              tags: $(IMAGE_TAG)
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy image \
+                  --exit-code 1 \
+                  --severity HIGH,CRITICAL \
+                  --no-progress \
+                  $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG)
+            displayName: Scan backend image with Trivy
+
+          - task: Docker@2
+            displayName: Push backend image to ACR
+            inputs:
+              containerRegistry: acr-service-connection
+              repository: ecommerce-backend
+              command: push
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          - task: Docker@2
+            displayName: Build frontend image
+            inputs:
+              containerRegistry: acr-service-connection
+              repository: ecommerce-frontend
+              command: build
+              Dockerfile: frontend/Dockerfile
+              buildContext: frontend
+              tags: $(IMAGE_TAG)
+
+          - script: |
+              docker run --rm \
+                -v /var/run/docker.sock:/var/run/docker.sock \
+                aquasec/trivy image \
+                  --exit-code 1 \
+                  --severity HIGH,CRITICAL \
+                  --no-progress \
+                  $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG)
+            displayName: Scan frontend image with Trivy
+
+          - task: Docker@2
+            displayName: Push frontend image to ACR
+            inputs:
+              containerRegistry: acr-service-connection
+              repository: ecommerce-frontend
+              command: push
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          - script: |
+              sed -i "s|IMAGE_TAG|$(IMAGE_TAG)|g" backend.yaml frontend.yaml
+            displayName: Substitute image tag in K8s manifests
+
+          - task: PublishPipelineArtifact@1
+            displayName: Publish K8s manifests as artifact
+            inputs:
+              targetPath: $(System.DefaultWorkingDirectory)
+              artifact: k8s-manifests
+              publishLocation: pipeline
+
+  # ─────────────────────────────────────────────
+  # Stage 3: Deploy to AKS (Staging)
+  # ─────────────────────────────────────────────
+  - stage: DeployStaging
+    displayName: Deploy to AKS Staging
+    dependsOn: DockerPush
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/develop'))
+    jobs:
+      - deployment: DeployToStaging
+        displayName: Deploy to staging namespace
+        pool:
+          vmImage: ubuntu-latest
+        environment: staging
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    artifact: k8s-manifests
+                    path: $(Pipeline.Workspace)/manifests
+
+                - task: KubernetesManifest@0
+                  displayName: Deploy backend to AKS staging
+                  inputs:
+                    action: deploy
+                    kubernetesServiceConnection: aks-service-connection
+                    namespace: staging
+                    manifests: $(Pipeline.Workspace)/manifests/backend.yaml
+
+                - task: KubernetesManifest@0
+                  displayName: Deploy frontend to AKS staging
+                  inputs:
+                    action: deploy
+                    kubernetesServiceConnection: aks-service-connection
+                    namespace: staging
+                    manifests: $(Pipeline.Workspace)/manifests/frontend.yaml
+
+  # ─────────────────────────────────────────────
+  # Stage 4: Deploy to AKS (Production) — manual approval gate
+  # ─────────────────────────────────────────────
+  - stage: DeployProduction
+    displayName: Deploy to AKS Production
+    dependsOn: DeployStaging
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+    jobs:
+      - deployment: DeployToProduction
+        displayName: Deploy to production namespace
+        pool:
+          vmImage: ubuntu-latest
+        environment: production        # manual approval gate set in Azure DevOps Environments
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - task: DownloadPipelineArtifact@2
+                  inputs:
+                    artifact: k8s-manifests
+                    path: $(Pipeline.Workspace)/manifests
+
+                - task: KubernetesManifest@0
+                  displayName: Deploy backend to AKS production
+                  inputs:
+                    action: deploy
+                    kubernetesServiceConnection: aks-service-connection
+                    namespace: production
+                    manifests: $(Pipeline.Workspace)/manifests/backend.yaml
+
+                - task: KubernetesManifest@0
+                  displayName: Deploy frontend to AKS production
+                  inputs:
+                    action: deploy
+                    kubernetesServiceConnection: aks-service-connection
+                    namespace: production
+                    manifests: $(Pipeline.Workspace)/manifests/frontend.yaml
