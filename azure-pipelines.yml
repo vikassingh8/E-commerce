@@ -94,9 +94,11 @@ stages:
           - script: |
               docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(System.DefaultWorkingDirectory)/.trivyignore:/.trivyignore \
                 aquasec/trivy image \
                   --exit-code 1 \
                   --severity HIGH,CRITICAL \
+                  --ignorefile /.trivyignore \
                   --no-progress \
                   $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG)
             displayName: Scan backend image with Trivy
@@ -124,9 +126,11 @@ stages:
           - script: |
               docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
+                -v $(System.DefaultWorkingDirectory)/.trivyignore:/.trivyignore \
                 aquasec/trivy image \
                   --exit-code 1 \
                   --severity HIGH,CRITICAL \
+                  --ignorefile /.trivyignore \
                   --no-progress \
                   $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG)
             displayName: Scan frontend image with Trivy
