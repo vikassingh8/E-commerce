@@ -1,0 +1,6 @@
+# node-tar CVEs in npm bundled with node:20-alpine
+# These affect npm itself (not our application code).
+# npm is only used during image build; no fix available in any current node:20 image.
+CVE-2026-26960
+CVE-2026-29786
+CVE-2026-31802
