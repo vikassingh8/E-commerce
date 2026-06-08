@@ -10,6 +10,10 @@ const products = [
   { id: 2, name: "Phone", price: 30000 },
 ];
 
+app.get("/health", (req, res) => {
+  res.status(200).json({ status: "ok" });
+});
+
 app.get("/api/products", (req, res) => {
   res.json(products);
 });
