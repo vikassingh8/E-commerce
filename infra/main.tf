@@ -5,6 +5,13 @@ terraform {
       version = "~> 3.0"
     }
   }
+
+  backend "azurerm" {
+    resource_group_name  = "ecommerce-rg"
+    storage_account_name = "ecomtfstate872"
+    container_name       = "tfstate"
+    key                  = "ecommerce.terraform.tfstate"
+  }
 }
 
 provider "azurerm" {
@@ -84,7 +91,7 @@ resource "azurerm_container_registry" "acr" {
 
 # ── Azure Key Vault ───────────────────────────────────────────────────────────
 resource "azurerm_key_vault" "kv" {
-  name                        = "ecommerce-kv"
+  name                        = "ecom-kv-872"
   location                    = azurerm_resource_group.rg.location
   resource_group_name         = azurerm_resource_group.rg.name
   tenant_id                   = data.azurerm_client_config.current.tenant_id
@@ -124,11 +131,12 @@ resource "azurerm_kubernetes_cluster" "aks" {
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   dns_prefix          = "ecommerceaks"
+  oidc_issuer_enabled = true
 
   default_node_pool {
     name           = "default"
     node_count     = 1
-    vm_size        = "Standard_B2s_v2"
+    vm_size        = "Standard_D2s_v3"
     vnet_subnet_id = azurerm_subnet.aks_subnet.id
   }
 
@@ -143,6 +151,8 @@ resource "azurerm_kubernetes_cluster" "aks" {
   network_profile {
     network_plugin = "azure"
     network_policy = "azure"
+    service_cidr   = "10.2.0.0/16"
+    dns_service_ip = "10.2.0.10"
   }
 }
 
@@ -152,6 +162,94 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   role_definition_name             = "AcrPull"
   scope                            = azurerm_container_registry.acr.id
   skip_service_principal_aad_check = true
+}
+
+# ── Monitor Alert — AKS CPU > 80% ────────────────────────────────────────────
+resource "azurerm_monitor_metric_alert" "aks_cpu_alert" {
+  name                = "aks-high-cpu"
+  resource_group_name = azurerm_resource_group.rg.name
+  scopes              = [azurerm_kubernetes_cluster.aks.id]
+  description         = "Alert when AKS node CPU exceeds 80%"
+  severity            = 2
+  frequency           = "PT5M"
+  window_size         = "PT15M"
+
+  criteria {
+    metric_namespace = "Microsoft.ContainerService/managedClusters"
+    metric_name      = "node_cpu_usage_percentage"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 80
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.email_alert.id
+  }
+}
+
+# ── Monitor Alert — AKS Memory > 80% ─────────────────────────────────────────
+resource "azurerm_monitor_metric_alert" "aks_memory_alert" {
+  name                = "aks-high-memory"
+  resource_group_name = azurerm_resource_group.rg.name
+  scopes              = [azurerm_kubernetes_cluster.aks.id]
+  description         = "Alert when AKS node memory exceeds 80%"
+  severity            = 2
+  frequency           = "PT5M"
+  window_size         = "PT15M"
+
+  criteria {
+    metric_namespace = "Microsoft.ContainerService/managedClusters"
+    metric_name      = "node_memory_working_set_percentage"
+    aggregation      = "Average"
+    operator         = "GreaterThan"
+    threshold        = 80
+  }
+
+  action {
+    action_group_id = azurerm_monitor_action_group.email_alert.id
+  }
+}
+
+# ── Monitor Action Group (email notifications) ────────────────────────────────
+resource "azurerm_monitor_action_group" "email_alert" {
+  name                = "ecommerce-alerts"
+  resource_group_name = azurerm_resource_group.rg.name
+  short_name          = "ecom-alert"
+
+  email_receiver {
+    name          = "admin"
+    email_address = "vikassingh.dnagrowth@gmail.com"
+  }
+}
+
+# ── Cost Budget Alert ($50/month) ─────────────────────────────────────────────
+resource "azurerm_consumption_budget_resource_group" "budget" {
+  name              = "ecommerce-monthly-budget"
+  resource_group_id = azurerm_resource_group.rg.id
+  amount            = 50
+  time_grain        = "Monthly"
+
+  time_period {
+    start_date = "2026-06-01T00:00:00Z"
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 80
+    operator       = "GreaterThan"
+    threshold_type = "Actual"
+
+    contact_emails = ["vikassingh.dnagrowth@gmail.com"]
+  }
+
+  notification {
+    enabled        = true
+    threshold      = 100
+    operator       = "GreaterThan"
+    threshold_type = "Actual"
+
+    contact_emails = ["vikassingh.dnagrowth@gmail.com"]
+  }
 }
 
 # ── Outputs ───────────────────────────────────────────────────────────────────
