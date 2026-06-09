@@ -72,12 +72,12 @@ stages:
   # Stage 2: Docker Build & Push to ACR
   # ─────────────────────────────────────────────
   - stage: DockerPush
-    displayName: Docker Build, Scan and Push to ACR
+    displayName: Docker Build, Scan and Push
     dependsOn: CI
     condition: and(succeeded(), ne(variables['Build.Reason'], 'PullRequest'))
     jobs:
       - job: DockerBuildPush
-        displayName: Build, scan and push images to ACR
+        displayName: Build, scan and push images to ACR and Docker Hub
         pool:
           vmImage: ubuntu-latest
         steps:
@@ -119,6 +119,21 @@ stages:
                 $(IMAGE_TAG)
                 latest
 
+          - script: |
+              docker tag $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) singhvikas872/ecommerce-backend:$(IMAGE_TAG)
+              docker tag $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) singhvikas872/ecommerce-backend:latest
+            displayName: Tag backend image for Docker Hub
+
+          - task: Docker@2
+            displayName: Push backend image to Docker Hub
+            inputs:
+              containerRegistry: dockerhub-service-connection
+              repository: singhvikas872/ecommerce-backend
+              command: push
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
           - task: Docker@2
             displayName: Build frontend image
             inputs:
@@ -146,6 +161,21 @@ stages:
             inputs:
               containerRegistry: acr-service-connection
               repository: ecommerce-frontend
+              command: push
+              tags: |
+                $(IMAGE_TAG)
+                latest
+
+          - script: |
+              docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) singhvikas872/ecommerce-frontend:$(IMAGE_TAG)
+              docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) singhvikas872/ecommerce-frontend:latest
+            displayName: Tag frontend image for Docker Hub
+
+          - task: Docker@2
+            displayName: Push frontend image to Docker Hub
+            inputs:
+              containerRegistry: dockerhub-service-connection
+              repository: singhvikas872/ecommerce-frontend
               command: push
               tags: |
                 $(IMAGE_TAG)
