@@ -27,3 +27,7 @@ CVE-2025-64756
 CVE-2026-26996
 CVE-2026-27903
 CVE-2026-27904
+
+# libxml2 CVE in alpine 3.23.4 base layer (frontend image)
+# Fixed in 2.13.9-r1 but node:20-alpine has not yet pulled the patched apk index
+CVE-2026-6732
