@@ -109,15 +109,13 @@ stages:
                   $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG)
             displayName: Scan backend image with Trivy
 
-          - task: Docker@2
+          - script: |
+              echo "$(ACR_PASSWORD)" | docker login $(ACR_NAME) --username $(ACR_USERNAME) --password-stdin
+              docker push $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG)
+              docker push $(ACR_NAME)/ecommerce-backend:latest
             displayName: Push backend image to ACR
-            inputs:
-              containerRegistry: acr-service-connection
-              repository: ecommerce-backend
-              command: push
-              tags: |
-                $(IMAGE_TAG)
-                latest
+            env:
+              ACR_PASSWORD: $(ACR_PASSWORD)
 
           - script: |
               docker tag $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) singhvikas872/ecommerce-backend:$(IMAGE_TAG)
@@ -156,15 +154,10 @@ stages:
                   $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG)
             displayName: Scan frontend image with Trivy
 
-          - task: Docker@2
+          - script: |
+              docker push $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG)
+              docker push $(ACR_NAME)/ecommerce-frontend:latest
             displayName: Push frontend image to ACR
-            inputs:
-              containerRegistry: acr-service-connection
-              repository: ecommerce-frontend
-              command: push
-              tags: |
-                $(IMAGE_TAG)
-                latest
 
           - script: |
               docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) singhvikas872/ecommerce-frontend:$(IMAGE_TAG)
