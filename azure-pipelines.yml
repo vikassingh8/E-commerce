@@ -69,7 +69,7 @@ stages:
             displayName: Build frontend
 
   # ─────────────────────────────────────────────
-  # Stage 2: Docker Build & Push to ACR
+  # Stage 2: Docker Build & Push
   # ─────────────────────────────────────────────
   - stage: DockerPush
     displayName: Docker Build, Scan and Push
@@ -87,15 +87,8 @@ stages:
               containerRegistry: dockerhub-service-connection
               command: login
 
-          - task: Docker@2
+          - script: docker build -t $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) -f backend/Dockerfile backend
             displayName: Build backend image
-            inputs:
-              containerRegistry: acr-service-connection
-              repository: ecommerce-backend
-              command: build
-              Dockerfile: backend/Dockerfile
-              buildContext: backend
-              tags: $(IMAGE_TAG)
 
           - script: |
               docker run --rm \
@@ -110,11 +103,13 @@ stages:
             displayName: Scan backend image with Trivy
 
           - script: |
-              echo "$(ACR_PASSWORD)" | docker login $(ACR_NAME) --username $(ACR_USERNAME) --password-stdin
+              echo "$ACR_PASSWORD" | docker login $(ACR_NAME) --username "$ACR_USERNAME" --password-stdin
               docker push $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG)
+              docker tag $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) $(ACR_NAME)/ecommerce-backend:latest
               docker push $(ACR_NAME)/ecommerce-backend:latest
             displayName: Push backend image to ACR
             env:
+              ACR_USERNAME: $(ACR_USERNAME)
               ACR_PASSWORD: $(ACR_PASSWORD)
 
           - script: |
@@ -132,15 +127,8 @@ stages:
                 $(IMAGE_TAG)
                 latest
 
-          - task: Docker@2
+          - script: docker build -t $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) -f frontend/Dockerfile frontend
             displayName: Build frontend image
-            inputs:
-              containerRegistry: acr-service-connection
-              repository: ecommerce-frontend
-              command: build
-              Dockerfile: frontend/Dockerfile
-              buildContext: frontend
-              tags: $(IMAGE_TAG)
 
           - script: |
               docker run --rm \
@@ -155,9 +143,14 @@ stages:
             displayName: Scan frontend image with Trivy
 
           - script: |
+              echo "$ACR_PASSWORD" | docker login $(ACR_NAME) --username "$ACR_USERNAME" --password-stdin
               docker push $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG)
+              docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) $(ACR_NAME)/ecommerce-frontend:latest
               docker push $(ACR_NAME)/ecommerce-frontend:latest
             displayName: Push frontend image to ACR
+            env:
+              ACR_USERNAME: $(ACR_USERNAME)
+              ACR_PASSWORD: $(ACR_PASSWORD)
 
           - script: |
               docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) singhvikas872/ecommerce-frontend:$(IMAGE_TAG)
@@ -235,7 +228,7 @@ stages:
         displayName: Deploy to production namespace
         pool:
           vmImage: ubuntu-latest
-        environment: production        # manual approval gate set in Azure DevOps Environments
+        environment: production
         strategy:
           runOnce:
             deploy:
