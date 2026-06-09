@@ -6,7 +6,7 @@ metadata:
     app: backend
 
 spec:
-  replicas: 2
+  replicas: 1
 
   strategy:
     type: RollingUpdate
@@ -35,10 +35,10 @@ spec:
           resources:
             requests:
               memory: "128Mi"
-              cpu: "250m"
+              cpu: "100m"
             limits:
               memory: "256Mi"
-              cpu: "500m"
+              cpu: "300m"
 
           readinessProbe:
             httpGet:
