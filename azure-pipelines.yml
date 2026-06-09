@@ -101,7 +101,7 @@ stages:
               docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v $(System.DefaultWorkingDirectory)/.trivyignore:/.trivyignore \
-                aquasec/trivy image \
+                ghcr.io/aquasecurity/trivy:latest image \
                   --exit-code 1 \
                   --severity HIGH,CRITICAL \
                   --ignorefile /.trivyignore \
@@ -148,7 +148,7 @@ stages:
               docker run --rm \
                 -v /var/run/docker.sock:/var/run/docker.sock \
                 -v $(System.DefaultWorkingDirectory)/.trivyignore:/.trivyignore \
-                aquasec/trivy image \
+                ghcr.io/aquasecurity/trivy:latest image \
                   --exit-code 1 \
                   --severity HIGH,CRITICAL \
                   --ignorefile /.trivyignore \
