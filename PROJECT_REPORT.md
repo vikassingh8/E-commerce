@@ -15,7 +15,7 @@
 4. [CI/CD Pipeline Setup](#4-cicd-pipeline-setup)
 5. [Containerization & Docker](#5-containerization--docker)
 6. [AKS Deployment](#6-aks-deployment)
-7. [Infrastructure as Code — Terraform](#7-infrastructure-as-code--terraform)
+7. [Infrastructure as Code - Terraform](#7-infrastructure-as-code--terraform)
 8. [Secrets Management & Security](#8-secrets-management--security)
 9. [Monitoring & Alerting](#9-monitoring--alerting)
 10. [Cost Management](#10-cost-management)
@@ -153,8 +153,8 @@ E-Commerce/
 ├── infra/                  Terraform infrastructure
 │   ├── main.tf
 │   └── outputs.tf
-├── backend.yaml            Kubernetes manifest — backend
-├── frontend.yaml           Kubernetes manifest — frontend
+├── backend.yaml            Kubernetes manifest - backend
+├── frontend.yaml           Kubernetes manifest - frontend
 ├── azure-pipelines.yml     CI/CD pipeline definition
 ├── .trivyignore            Trivy CVE suppressions
 ├── ARCHITECTURE.md         Architecture reference
@@ -182,28 +182,28 @@ pr:
       - develop
 ```
 
-### Stage 1: CI — Build and Test
+### Stage 1: CI - Build and Test
 
 **Backend job:**
 1. Install Node.js 20
-2. `npm ci --omit=dev` — install production dependencies
-3. `npm test` — run unit tests
+2. `npm ci --omit=dev` - install production dependencies
+3. `npm test` - run unit tests
 
 **Frontend job:**
 1. Install Node.js 20
-2. `yarn install` — install dependencies
-3. `yarn test` — run unit tests (Vitest)
-4. `yarn build` — compile React app with Vite
+2. `yarn install` - install dependencies
+3. `yarn test` - run unit tests (Vitest)
+4. `yarn build` - compile React app with Vite
 
-### Stage 2: DockerPush — Build, Scan & Push
+### Stage 2: DockerPush - Build, Scan & Push
 
 Runs only on push (not PRs). Steps for each image (backend + frontend):
 
 1. Login to Docker Hub (to avoid pull rate limits)
-2. `docker build` — build image tagged with `$(Build.BuildId)`
-3. **Trivy scan** — scan for HIGH and CRITICAL CVEs, fail if found
+2. `docker build` - build image tagged with `$(Build.BuildId)`
+3. **Trivy scan** - scan for HIGH and CRITICAL CVEs, fail if found
 4. Login to ACR using pipeline secret variables
-5. `docker push` — push `IMAGE_TAG` and `latest` to ACR
+5. `docker push` - push `IMAGE_TAG` and `latest` to ACR
 6. Tag and push to Docker Hub as backup registry
 7. Substitute image tag in K8s manifests
 8. Publish manifests as pipeline artifact
@@ -258,10 +258,10 @@ CMD ["node", "index.js"]
 ```
 
 **Design decisions:**
-- `node:20-alpine` — minimal base image (~50MB vs ~300MB for full node)
-- `npm ci --omit=dev` — installs only production dependencies, no devDependencies
-- `USER node` — runs as non-root for security
-- Dependencies copied before source code — maximises Docker layer cache
+- `node:20-alpine` - minimal base image (~50MB vs ~300MB for full node)
+- `npm ci --omit=dev` - installs only production dependencies, no devDependencies
+- `USER node` - runs as non-root for security
+- Dependencies copied before source code - maximises Docker layer cache
 
 ### Frontend Dockerfile (Multi-stage build)
 
@@ -284,10 +284,10 @@ EXPOSE 80
 ```
 
 **Design decisions:**
-- **Multi-stage build** — build tools (Node, yarn, React) are not included in the final image
+- **Multi-stage build** - build tools (Node, yarn, React) are not included in the final image
 - Final image contains only Nginx + compiled static files (~25MB)
-- `yarn install --frozen-lockfile` — ensures reproducible dependency resolution
-- Custom `nginx.conf` — handles React SPA routing (all paths serve `index.html`)
+- `yarn install --frozen-lockfile` - ensures reproducible dependency resolution
+- Custom `nginx.conf` - handles React SPA routing (all paths serve `index.html`)
 
 ### Docker Compose (Local Testing)
 
@@ -469,7 +469,7 @@ kubectl get svc -n staging
 
 ### AKS Cluster Access to ACR
 
-AKS uses a managed identity with the `AcrPull` role on ACR — no image pull secrets required:
+AKS uses a managed identity with the `AcrPull` role on ACR - no image pull secrets required:
 
 ```hcl
 resource "azurerm_role_assignment" "aks_acr_pull" {
@@ -481,7 +481,7 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
 
 ---
 
-## 7. Infrastructure as Code — Terraform
+## 7. Infrastructure as Code - Terraform
 
 All Azure infrastructure is defined in `infra/main.tf` and provisioned via Terraform.
 
@@ -498,7 +498,7 @@ terraform {
 }
 ```
 
-State is stored remotely in Azure Blob Storage — enabling team collaboration and preventing state conflicts.
+State is stored remotely in Azure Blob Storage - enabling team collaboration and preventing state conflicts.
 
 ### Resources Provisioned
 
@@ -592,15 +592,15 @@ terraform apply
 
 - **Vault:** `ecom-kv-872`
 - Connected to Azure DevOps via **Library Variable Group:** `ecommerce-keyvault-secrets`
-- Pipeline references secrets via `$(secret-name)` syntax — never hardcoded in YAML
+- Pipeline references secrets via `$(secret-name)` syntax - never hardcoded in YAML
 
 ### Pipeline Secret Variables
 
 ACR credentials stored as pipeline secret variables (encrypted at rest):
-- `ACR_USERNAME` — ACR admin username
-- `ACR_PASSWORD` — ACR admin password (masked in all logs)
+- `ACR_USERNAME` - ACR admin username
+- `ACR_PASSWORD` - ACR admin password (masked in all logs)
 
-Passed to script steps via `env:` block only — never accessible as plain environment variables:
+Passed to script steps via `env:` block only - never accessible as plain environment variables:
 
 ```yaml
 env:
@@ -608,7 +608,7 @@ env:
   ACR_PASSWORD: $(ACR_PASSWORD)
 ```
 
-### Image Vulnerability Scanning — Trivy
+### Image Vulnerability Scanning - Trivy
 
 Every image is scanned before push. The pipeline fails if any HIGH or CRITICAL CVE is found:
 
@@ -623,9 +623,9 @@ docker run --rm \
     ecommercemcs.azurecr.io/ecommerce-backend:$(BUILD_ID)
 ```
 
-### `.trivyignore` — Accepted Risk Register
+### `.trivyignore` - Accepted Risk Register
 
-Suppressed CVEs are all in **npm's bundled internal tools** (`node_modules/npm/`) inside the base image — not in application code. Each suppression is documented:
+Suppressed CVEs are all in **npm's bundled internal tools** (`node_modules/npm/`) inside the base image - not in application code. Each suppression is documented:
 
 ```
 # node-tar CVEs (npm bundled, not app code)
@@ -644,11 +644,11 @@ CVE-2026-6732
 
 - Backend container runs as **non-root user** (`USER node` in Dockerfile)
 - Kubernetes pods have no privileged access
-- Network traffic controlled by NSG — only ports 80 and 443 inbound
+- Network traffic controlled by NSG - only ports 80 and 443 inbound
 
 ### RBAC
 
-- AKS uses **SystemAssigned managed identity** — no service principal credentials to rotate
+- AKS uses **SystemAssigned managed identity** - no service principal credentials to rotate
 - AKS kubelet has only `AcrPull` role on ACR (principle of least privilege)
 - Key Vault access restricted to the deploying identity via access policies
 
@@ -674,7 +674,7 @@ ContainerLog
 
 ### Azure Monitor Alerts
 
-**CPU Alert — triggers when AKS node CPU > 80% for 15 minutes:**
+**CPU Alert - triggers when AKS node CPU > 80% for 15 minutes:**
 
 ```hcl
 resource "azurerm_monitor_metric_alert" "aks_cpu_alert" {
@@ -692,7 +692,7 @@ resource "azurerm_monitor_metric_alert" "aks_cpu_alert" {
 }
 ```
 
-**Memory Alert — triggers when AKS node memory > 80%:**
+**Memory Alert - triggers when AKS node memory > 80%:**
 
 ```hcl
 resource "azurerm_monitor_metric_alert" "aks_memory_alert" {
@@ -704,7 +704,7 @@ resource "azurerm_monitor_metric_alert" "aks_memory_alert" {
 }
 ```
 
-**Action Group — email notifications:**
+**Action Group - email notifications:**
 
 ```hcl
 resource "azurerm_monitor_action_group" "email_alert" {
@@ -770,11 +770,11 @@ resource "azurerm_consumption_budget_resource_group" "budget" {
 
 ### Cost Optimisation Strategies
 
-1. **Single node pool** — one `Standard_D2s_v3` node fits both staging workloads
-2. **Staging = develop only** — staging is not always running full replicas
-3. **ACR Basic tier** — sufficient for a project-scale registry
-4. **Log Analytics 30-day retention** — minimum required for alerting
-5. **Budget alerts** — automatic email warnings prevent bill surprises
+1. **Single node pool** - one `Standard_D2s_v3` node fits both staging workloads
+2. **Staging = develop only** - staging is not always running full replicas
+3. **ACR Basic tier** - sufficient for a project-scale registry
+4. **Log Analytics 30-day retention** - minimum required for alerting
+5. **Budget alerts** - automatic email warnings prevent bill surprises
 
 ---
 
@@ -808,7 +808,7 @@ resource "azurerm_consumption_budget_resource_group" "budget" {
 
 ### Rolling Update Strategy
 
-Both deployments use RollingUpdate with `maxUnavailable: 0` — zero-downtime deployments:
+Both deployments use RollingUpdate with `maxUnavailable: 0` - zero-downtime deployments:
 
 ```yaml
 strategy:
@@ -904,7 +904,7 @@ Based on Azure Pricing Calculator for **Central India** region:
 | VNet / Bandwidth | Internal traffic | ~$1 |
 | **Total** | | **~$87/month** |
 
-**Budget alert configured at $50/month** — alerts fire at 80% ($40) and 100% ($50) via email.
+**Budget alert configured at $50/month** - alerts fire at 80% ($40) and 100% ($50) via email.
 
 ### Reproducing this in the Azure Pricing Calculator
 
@@ -961,7 +961,7 @@ matching the table above.
 | `:latest` tag not created | Build with single tag, then `docker tag` immediately after first push succeeds |
 | Insufficient CPU on AKS node | Reduced replicas to 1 and CPU requests from 250m to 100m for single-node staging |
 | K8s namespace not found | One-time manual: `kubectl create namespace staging/production` |
-| Uncommitted pipeline fixes | Pipeline ran old committed code — established commit-before-run discipline |
+| Uncommitted pipeline fixes | Pipeline ran old committed code - established commit-before-run discipline |
 | Terraform state lost after teardown | Recreated the RG + state storage account, then `terraform import`-ed the pre-existing resource group and consumption budget before re-running `terraform apply` |
 | Trivy HIGH on OpenSSL (CVE-2026-45447) | Patched both base images with `apk upgrade --no-cache` so `libssl3`/`libcrypto3` move to the fixed `3.5.7-r0`, and the scan passes |
 | ACR admin login blocked | Subscription policy disables the ACR admin account, so images were authenticated and pushed with `az acr login` (AAD token) rather than admin user/password |
@@ -974,28 +974,28 @@ Both environments are deployed on the same AKS cluster (`ecommerce-aks`) in sepa
 
 | Environment | Branch | Trigger | Public URL | Status |
 |-------------|--------|---------|------------|--------|
-| Staging | `develop` | Automatic after CI + DockerPush | http://4.224.189.95 | Live — HTTP 200, 10 products |
-| Production | `main` | After **manual approval gate** | http://4.247.192.201 | Live — HTTP 200, 10 products |
+| Staging | `develop` | Automatic after CI + DockerPush | http://4.224.189.95 | Live - HTTP 200, 10 products |
+| Production | `main` | After **manual approval gate** | http://4.247.192.201 | Live - HTTP 200, 10 products |
 
 | Field | Value |
 |-------|-------|
 | Date | 2026-06-20 |
 | Cluster | `ecommerce-aks` (Central India), 1× `Standard_D2s_v3` node |
-| Registry | `ecommercemcs.azurecr.io` — `ecommerce-backend`, `ecommerce-frontend` |
+| Registry | `ecommercemcs.azurecr.io` - `ecommerce-backend`, `ecommerce-frontend` |
 | Image auth | Azure AD via service principal `ecommerce-acr-push` (`AcrPull`/`AcrPush`), `az acr login` |
-| Resources | RG, VNet/NSG, ACR, AKS, Key Vault, Log Analytics, App Insights, CPU/memory alerts, budget — all via Terraform |
+| Resources | RG, VNet/NSG, ACR, AKS, Key Vault, Log Analytics, App Insights, CPU/memory alerts, budget - all via Terraform |
 
 Verification:
 
 ```bash
 # Production
 kubectl get pods -n production           # backend + frontend Running (1/1)
-curl http://4.247.192.201/               # 200 — VOLT storefront
-curl http://4.247.192.201/api/products   # 200 — 10 products as JSON
+curl http://4.247.192.201/               # 200 - VOLT storefront
+curl http://4.247.192.201/api/products   # 200 - 10 products as JSON
 
 # Staging
 kubectl get pods -n staging              # backend + frontend Running (1/1)
-curl http://4.224.189.95/api/products    # 200 — 10 products as JSON
+curl http://4.224.189.95/api/products    # 200 - 10 products as JSON
 ```
 
 > Public IPs are assigned by the AKS LoadBalancer and may change if the cluster's
@@ -1004,4 +1004,4 @@ curl http://4.224.189.95/api/products    # 200 — 10 products as JSON
 
 ---
 
-*Report prepared for Masters Software Engineering Capstone — Deploying Scalable E-Commerce with Azure DevOps*
+*Report prepared for Masters Software Engineering Capstone - Deploying Scalable E-Commerce with Azure DevOps*
