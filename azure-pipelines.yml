@@ -83,6 +83,14 @@ stages:
               containerRegistry: dockerhub-service-connection
               command: login
 
+          - task: AzureCLI@2
+            displayName: Login to ACR via Azure AD
+            inputs:
+              azureSubscription: acr-arm-connection
+              scriptType: bash
+              scriptLocation: inlineScript
+              inlineScript: az acr login --name ecommercemcs
+
           - script: docker build -t $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) -f backend/Dockerfile backend
             displayName: Build backend image
 
@@ -99,14 +107,10 @@ stages:
             displayName: Scan backend image with Trivy
 
           - script: |
-              echo "$ACR_PASSWORD" | docker login $(ACR_NAME) --username "$ACR_USERNAME" --password-stdin
               docker push $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG)
               docker tag $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) $(ACR_NAME)/ecommerce-backend:latest
               docker push $(ACR_NAME)/ecommerce-backend:latest
             displayName: Push backend image to ACR
-            env:
-              ACR_USERNAME: $(ACR_USERNAME)
-              ACR_PASSWORD: $(ACR_PASSWORD)
 
           - script: |
               docker tag $(ACR_NAME)/ecommerce-backend:$(IMAGE_TAG) singhvikas872/ecommerce-backend:$(IMAGE_TAG)
@@ -139,14 +143,10 @@ stages:
             displayName: Scan frontend image with Trivy
 
           - script: |
-              echo "$ACR_PASSWORD" | docker login $(ACR_NAME) --username "$ACR_USERNAME" --password-stdin
               docker push $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG)
               docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) $(ACR_NAME)/ecommerce-frontend:latest
               docker push $(ACR_NAME)/ecommerce-frontend:latest
             displayName: Push frontend image to ACR
-            env:
-              ACR_USERNAME: $(ACR_USERNAME)
-              ACR_PASSWORD: $(ACR_PASSWORD)
 
           - script: |
               docker tag $(ACR_NAME)/ecommerce-frontend:$(IMAGE_TAG) singhvikas872/ecommerce-frontend:$(IMAGE_TAG)
@@ -194,21 +194,16 @@ stages:
                     artifact: k8s-manifests
                     path: $(Pipeline.Workspace)/manifests
 
-                - task: KubernetesManifest@0
-                  displayName: Deploy backend to AKS staging
+                - task: AzureCLI@2
+                  displayName: Deploy to AKS staging
                   inputs:
-                    action: deploy
-                    kubernetesServiceConnection: aks-service-connection
-                    namespace: staging
-                    manifests: $(Pipeline.Workspace)/manifests/backend.yaml
-
-                - task: KubernetesManifest@0
-                  displayName: Deploy frontend to AKS staging
-                  inputs:
-                    action: deploy
-                    kubernetesServiceConnection: aks-service-connection
-                    namespace: staging
-                    manifests: $(Pipeline.Workspace)/manifests/frontend.yaml
+                    azureSubscription: acr-arm-connection
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az aks get-credentials -g ecommerce-rg -n ecommerce-aks --admin --overwrite-existing
+                      kubectl apply -n staging -f $(Pipeline.Workspace)/manifests/backend.yaml
+                      kubectl apply -n staging -f $(Pipeline.Workspace)/manifests/frontend.yaml
 
   # Stage 4: Deploy to AKS production (manual approval gate)
   - stage: DeployProduction
@@ -230,18 +225,13 @@ stages:
                     artifact: k8s-manifests
                     path: $(Pipeline.Workspace)/manifests
 
-                - task: KubernetesManifest@0
-                  displayName: Deploy backend to AKS production
+                - task: AzureCLI@2
+                  displayName: Deploy to AKS production
                   inputs:
-                    action: deploy
-                    kubernetesServiceConnection: aks-service-connection
-                    namespace: production
-                    manifests: $(Pipeline.Workspace)/manifests/backend.yaml
-
-                - task: KubernetesManifest@0
-                  displayName: Deploy frontend to AKS production
-                  inputs:
-                    action: deploy
-                    kubernetesServiceConnection: aks-service-connection
-                    namespace: production
-                    manifests: $(Pipeline.Workspace)/manifests/frontend.yaml
+                    azureSubscription: acr-arm-connection
+                    scriptType: bash
+                    scriptLocation: inlineScript
+                    inlineScript: |
+                      az aks get-credentials -g ecommerce-rg -n ecommerce-aks --admin --overwrite-existing
+                      kubectl apply -n production -f $(Pipeline.Workspace)/manifests/backend.yaml
+                      kubectl apply -n production -f $(Pipeline.Workspace)/manifests/frontend.yaml
