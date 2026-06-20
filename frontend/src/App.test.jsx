@@ -6,7 +6,7 @@ const mockProducts = [
 ];
 
 beforeEach(() => {
-  global.fetch = vi.fn().mockResolvedValue({
+  globalThis.fetch = vi.fn().mockResolvedValue({
     json: vi.fn().mockResolvedValue(mockProducts),
   });
 });
@@ -20,7 +20,7 @@ describe('App', () => {
 
   it('fetches from the /api/products endpoint', async () => {
     await fetch('/api/products');
-    expect(global.fetch).toHaveBeenCalledWith('/api/products');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/products');
   });
 
   it('products have required fields', () => {

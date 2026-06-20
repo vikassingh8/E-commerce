@@ -22,9 +22,7 @@ variables:
     value: $(Build.BuildId)
 
 stages:
-  # ─────────────────────────────────────────────
-  # Stage 1: Build & Test
-  # ─────────────────────────────────────────────
+  # Stage 1: Build and test
   - stage: CI
     displayName: Build and Test
     jobs:
@@ -68,9 +66,7 @@ stages:
             workingDirectory: frontend
             displayName: Build frontend
 
-  # ─────────────────────────────────────────────
-  # Stage 2: Docker Build & Push
-  # ─────────────────────────────────────────────
+  # Stage 2: Docker build, scan and push
   - stage: DockerPush
     displayName: Docker Build, Scan and Push
     dependsOn: CI
@@ -178,9 +174,7 @@ stages:
               artifact: k8s-manifests
               publishLocation: pipeline
 
-  # ─────────────────────────────────────────────
-  # Stage 3: Deploy to AKS (Staging)
-  # ─────────────────────────────────────────────
+  # Stage 3: Deploy to AKS staging
   - stage: DeployStaging
     displayName: Deploy to AKS Staging
     dependsOn: DockerPush
@@ -216,9 +210,7 @@ stages:
                     namespace: staging
                     manifests: $(Pipeline.Workspace)/manifests/frontend.yaml
 
-  # ─────────────────────────────────────────────
-  # Stage 4: Deploy to AKS (Production) — manual approval gate
-  # ─────────────────────────────────────────────
+  # Stage 4: Deploy to AKS production (manual approval gate)
   - stage: DeployProduction
     displayName: Deploy to AKS Production
     dependsOn: DeployStaging

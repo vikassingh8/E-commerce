@@ -710,7 +710,7 @@ resource "azurerm_monitor_metric_alert" "aks_memory_alert" {
 resource "azurerm_monitor_action_group" "email_alert" {
   email_receiver {
     name          = "admin"
-    email_address = "vikassingh.dnagrowth@gmail.com"
+    email_address = "singhvikas872@gmail.com"
   }
 }
 ```
@@ -741,12 +741,12 @@ resource "azurerm_consumption_budget_resource_group" "budget" {
 
   notification {
     threshold = 80
-    contact_emails = ["vikassingh.dnagrowth@gmail.com"]
+    contact_emails = ["singhvikas872@gmail.com"]
   }
 
   notification {
     threshold = 100
-    contact_emails = ["vikassingh.dnagrowth@gmail.com"]
+    contact_emails = ["singhvikas872@gmail.com"]
   }
 }
 ```

@@ -114,7 +114,7 @@ Developer (Git Push)
 ### 11. Azure Monitor — Alerts & Budgets
 **What:** Azure alerting and cost management service.  
 **Why:** Proactively notifies the team when infrastructure is under stress (high CPU/memory) or when cloud spend approaches budget limits.  
-**Used for:** CPU > 80% alert, Memory > 80% alert, and a $50/month budget alert — all sending email to `vikassingh.dnagrowth@gmail.com`.
+**Used for:** CPU > 80% alert, Memory > 80% alert, and a $50/month budget alert — all sending email to `singhvikas872@gmail.com`.
 
 ---
 

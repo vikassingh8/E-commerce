@@ -24,13 +24,13 @@ provider "azurerm" {
 
 data "azurerm_client_config" "current" {}
 
-# ── Resource Group ────────────────────────────────────────────────────────────
+# Resource Group
 resource "azurerm_resource_group" "rg" {
   name     = "ecommerce-rg"
   location = "Central India"
 }
 
-# ── Networking ────────────────────────────────────────────────────────────────
+# Networking
 resource "azurerm_virtual_network" "vnet" {
   name                = "ecommerce-vnet"
   address_space       = ["10.0.0.0/16"]
@@ -80,7 +80,7 @@ resource "azurerm_subnet_network_security_group_association" "nsg_assoc" {
   network_security_group_id = azurerm_network_security_group.nsg.id
 }
 
-# ── Azure Container Registry ──────────────────────────────────────────────────
+# Azure Container Registry
 resource "azurerm_container_registry" "acr" {
   name                = "ecommercemcs"
   resource_group_name = azurerm_resource_group.rg.name
@@ -89,7 +89,7 @@ resource "azurerm_container_registry" "acr" {
   admin_enabled       = true
 }
 
-# ── Azure Key Vault ───────────────────────────────────────────────────────────
+# Azure Key Vault
 resource "azurerm_key_vault" "kv" {
   name                        = "ecom-kv-872"
   location                    = azurerm_resource_group.rg.location
@@ -107,7 +107,7 @@ resource "azurerm_key_vault" "kv" {
   }
 }
 
-# ── Log Analytics Workspace ───────────────────────────────────────────────────
+# Log Analytics Workspace
 resource "azurerm_log_analytics_workspace" "law" {
   name                = "ecommerce-law"
   location            = azurerm_resource_group.rg.location
@@ -116,7 +116,7 @@ resource "azurerm_log_analytics_workspace" "law" {
   retention_in_days   = 30
 }
 
-# ── Application Insights ──────────────────────────────────────────────────────
+# Application Insights
 resource "azurerm_application_insights" "appinsights" {
   name                = "ecommerce-appinsights"
   location            = azurerm_resource_group.rg.location
@@ -125,7 +125,7 @@ resource "azurerm_application_insights" "appinsights" {
   application_type    = "web"
 }
 
-# ── Azure Kubernetes Service ──────────────────────────────────────────────────
+# Azure Kubernetes Service
 resource "azurerm_kubernetes_cluster" "aks" {
   name                = "ecommerce-aks"
   location            = azurerm_resource_group.rg.location
@@ -164,7 +164,7 @@ resource "azurerm_role_assignment" "aks_acr_pull" {
   skip_service_principal_aad_check = true
 }
 
-# ── Monitor Alert — AKS CPU > 80% ────────────────────────────────────────────
+# Monitor alert: AKS CPU > 80%
 resource "azurerm_monitor_metric_alert" "aks_cpu_alert" {
   name                = "aks-high-cpu"
   resource_group_name = azurerm_resource_group.rg.name
@@ -187,7 +187,7 @@ resource "azurerm_monitor_metric_alert" "aks_cpu_alert" {
   }
 }
 
-# ── Monitor Alert — AKS Memory > 80% ─────────────────────────────────────────
+# Monitor alert: AKS memory > 80%
 resource "azurerm_monitor_metric_alert" "aks_memory_alert" {
   name                = "aks-high-memory"
   resource_group_name = azurerm_resource_group.rg.name
@@ -210,7 +210,7 @@ resource "azurerm_monitor_metric_alert" "aks_memory_alert" {
   }
 }
 
-# ── Monitor Action Group (email notifications) ────────────────────────────────
+# Monitor action group for email notifications
 resource "azurerm_monitor_action_group" "email_alert" {
   name                = "ecommerce-alerts"
   resource_group_name = azurerm_resource_group.rg.name
@@ -218,11 +218,11 @@ resource "azurerm_monitor_action_group" "email_alert" {
 
   email_receiver {
     name          = "admin"
-    email_address = "vikassingh.dnagrowth@gmail.com"
+    email_address = "singhvikas872@gmail.com"
   }
 }
 
-# ── Cost Budget Alert ($50/month) ─────────────────────────────────────────────
+# Monthly cost budget alert
 resource "azurerm_consumption_budget_resource_group" "budget" {
   name              = "ecommerce-monthly-budget"
   resource_group_id = azurerm_resource_group.rg.id
@@ -239,7 +239,7 @@ resource "azurerm_consumption_budget_resource_group" "budget" {
     operator       = "GreaterThan"
     threshold_type = "Actual"
 
-    contact_emails = ["vikassingh.dnagrowth@gmail.com"]
+    contact_emails = ["singhvikas872@gmail.com"]
   }
 
   notification {
@@ -248,11 +248,11 @@ resource "azurerm_consumption_budget_resource_group" "budget" {
     operator       = "GreaterThan"
     threshold_type = "Actual"
 
-    contact_emails = ["vikassingh.dnagrowth@gmail.com"]
+    contact_emails = ["singhvikas872@gmail.com"]
   }
 }
 
-# ── Outputs ───────────────────────────────────────────────────────────────────
+# Outputs
 output "acr_login_server" {
   value = azurerm_container_registry.acr.login_server
 }
