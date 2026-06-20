@@ -1,0 +1,123 @@
+// Product catalogue. Single source of truth shared by the API and the tests.
+export const products = [
+  {
+    id: 1,
+    name: "UltraBook 14 Pro",
+    brand: "Volt",
+    category: "Laptops",
+    price: 80000,
+    rating: 4.7,
+    reviews: 214,
+    stock: 12,
+    description:
+      "14-inch 2.8K OLED display, 32GB RAM and a 1TB SSD. All-day battery built for real work.",
+  },
+  {
+    id: 2,
+    name: "Volt X2 5G",
+    brand: "Volt",
+    category: "Phones",
+    price: 30000,
+    rating: 4.5,
+    reviews: 489,
+    stock: 8,
+    description:
+      "6.5-inch AMOLED, triple 50MP camera and a 5000mAh battery with 67W fast charging.",
+  },
+  {
+    id: 3,
+    name: "Pulse ANC Headphones",
+    brand: "Volt",
+    category: "Audio",
+    price: 12000,
+    rating: 4.6,
+    reviews: 327,
+    stock: 25,
+    description:
+      "Over-ear active noise cancellation with 40-hour playback and multipoint pairing.",
+  },
+  {
+    id: 4,
+    name: "Track 2 Smartwatch",
+    brand: "Volt",
+    category: "Wearables",
+    price: 9000,
+    rating: 4.3,
+    reviews: 156,
+    stock: 4,
+    description:
+      "1.4-inch AMOLED, built-in GPS, SpO2 and heart-rate tracking with a 10-day battery.",
+  },
+  {
+    id: 5,
+    name: "Slate 11 Tablet",
+    brand: "Volt",
+    category: "Tablets",
+    price: 28000,
+    rating: 4.4,
+    reviews: 92,
+    stock: 15,
+    description:
+      "11-inch 120Hz display with stylus support, perfect for notes, sketching and reading.",
+  },
+  {
+    id: 6,
+    name: "Buds Air",
+    brand: "Volt",
+    category: "Audio",
+    price: 5500,
+    rating: 4.2,
+    reviews: 612,
+    stock: 40,
+    description:
+      "Lightweight true-wireless earbuds with low-latency game mode and a wireless charging case.",
+  },
+  {
+    id: 7,
+    name: "View 27 4K Monitor",
+    brand: "Volt",
+    category: "Displays",
+    price: 32000,
+    rating: 4.8,
+    reviews: 78,
+    stock: 6,
+    description:
+      "27-inch 4K IPS panel, 99% sRGB and USB-C single-cable power for a tidy desk.",
+  },
+  {
+    id: 8,
+    name: "Mech 75 Keyboard",
+    brand: "Volt",
+    category: "Accessories",
+    price: 6500,
+    rating: 4.6,
+    reviews: 203,
+    stock: 3,
+    description:
+      "Hot-swappable 75% mechanical keyboard with gasket mount and per-key RGB lighting.",
+  },
+  {
+    id: 9,
+    name: "Glide Pro Mouse",
+    brand: "Volt",
+    category: "Accessories",
+    price: 3500,
+    rating: 4.5,
+    reviews: 341,
+    stock: 0,
+    description:
+      "26K-DPI wireless mouse weighing just 58g, with a 70-hour battery and silent clicks.",
+  },
+  {
+    id: 10,
+    name: "Boom Mini Speaker",
+    brand: "Volt",
+    category: "Audio",
+    price: 4500,
+    rating: 4.1,
+    reviews: 188,
+    stock: 22,
+    description:
+      "Pocket Bluetooth speaker with IP67 waterproofing and 16 hours of playback.",
+  },
+];

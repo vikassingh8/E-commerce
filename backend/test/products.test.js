@@ -1,26 +1,25 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
+import { products } from "../products.js";
 
-const products = [
-  { id: 1, name: "Laptop", price: 80000 },
-  { id: 2, name: "Phone", price: 30000 },
-];
-
-describe("Products data", () => {
-  it("should have 2 products", () => {
-    assert.equal(products.length, 2);
+describe("Products catalogue", () => {
+  it("has at least 8 products", () => {
+    assert.ok(products.length >= 8, "expected a populated catalogue");
   });
 
-  it("each product should have id, name, and price", () => {
+  it("each product has the required fields", () => {
     for (const p of products) {
       assert.ok(p.id, "missing id");
       assert.ok(p.name, "missing name");
+      assert.ok(p.category, "missing category");
       assert.ok(p.price > 0, "price must be positive");
+      assert.ok(p.rating >= 0 && p.rating <= 5, "rating must be 0-5");
+      assert.ok(p.stock >= 0, "stock must not be negative");
     }
   });
 
-  it("Laptop price should be 80000", () => {
-    const laptop = products.find((p) => p.name === "Laptop");
-    assert.equal(laptop.price, 80000);
+  it("product ids are unique", () => {
+    const ids = new Set(products.map((p) => p.id));
+    assert.equal(ids.size, products.length);
   });
 });

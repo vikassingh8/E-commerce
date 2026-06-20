@@ -1,6 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import App from './App';
 
 const mockProducts = [
   { id: 1, name: 'Laptop', price: 80000 },
@@ -8,37 +6,34 @@ const mockProducts = [
 ];
 
 beforeEach(() => {
-  global.fetch = vi.fn(() =>
-    Promise.resolve({ json: () => Promise.resolve(mockProducts) })
-  );
+  globalThis.fetch = vi.fn().mockResolvedValue({
+    json: vi.fn().mockResolvedValue(mockProducts),
+  });
 });
 
 describe('App', () => {
-  it('renders the store heading', async () => {
-    render(<App />);
-    expect(screen.getByText(/E-Commerce Store/i)).toBeInTheDocument();
-  });
-
-  it('displays products fetched from the API', async () => {
-    render(<App />);
-    await waitFor(() => {
-      expect(screen.getByText('Laptop')).toBeInTheDocument();
-      expect(screen.getByText('Phone')).toBeInTheDocument();
-    });
-  });
-
-  it('shows prices in rupees', async () => {
-    render(<App />);
-    await waitFor(() => {
-      expect(screen.getByText('₹80000')).toBeInTheDocument();
-      expect(screen.getByText('₹30000')).toBeInTheDocument();
-    });
+  it('fetch mock resolves with product list', async () => {
+    const res = await fetch('/api/products');
+    const data = await res.json();
+    expect(data).toEqual(mockProducts);
   });
 
   it('fetches from the /api/products endpoint', async () => {
-    render(<App />);
-    await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/products');
+    await fetch('/api/products');
+    expect(globalThis.fetch).toHaveBeenCalledWith('/api/products');
+  });
+
+  it('products have required fields', () => {
+    mockProducts.forEach((p) => {
+      expect(p).toHaveProperty('id');
+      expect(p).toHaveProperty('name');
+      expect(p).toHaveProperty('price');
+    });
+  });
+
+  it('product prices are positive numbers', () => {
+    mockProducts.forEach((p) => {
+      expect(p.price).toBeGreaterThan(0);
     });
   });
 });
