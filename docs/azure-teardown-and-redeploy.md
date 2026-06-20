@@ -35,13 +35,13 @@ This document covers how to delete all Azure resources (stop billing) and bring 
 
 > **Warning:** This permanently deletes all resources including the Terraform backend storage account. You will need to recreate the backend before running Terraform again.
 
-### Step 1 — Login to Azure
+### Step 1 - Login to Azure
 
 ```powershell
 az login
 ```
 
-### Step 2 — Delete the entire resource group
+### Step 2 - Delete the entire resource group
 
 ```powershell
 az group delete --name ecommerce-rg --yes
@@ -49,7 +49,7 @@ az group delete --name ecommerce-rg --yes
 
 This single command removes all resources (AKS, ACR, Key Vault, VNet, storage, etc.) and stops billing.
 
-### Step 3 — Verify deletion
+### Step 3 - Verify deletion
 
 ```powershell
 az group show --name ecommerce-rg
@@ -68,7 +68,7 @@ Should return a "not found" error confirming deletion.
 - kubectl installed (`kubectl version --client`)
 - Azure DevOps pipeline still configured
 
-### Step 1 — Recreate Terraform Backend Storage
+### Step 1 - Recreate Terraform Backend Storage
 
 The Terraform state backend lives inside the resource group, so it gets deleted along with everything else. Recreate it first before running `terraform init`.
 
@@ -89,7 +89,7 @@ az storage container create `
   --account-name ecomtfstate872
 ```
 
-### Step 2 — Deploy Infrastructure via Terraform
+### Step 2 - Deploy Infrastructure via Terraform
 
 ```powershell
 cd infra
@@ -99,7 +99,7 @@ terraform apply -auto-approve
 
 Terraform will recreate: AKS, ACR, Key Vault, VNet, Log Analytics, App Insights, Monitor Alerts, Cost Budget.
 
-### Step 3 — Connect kubectl to the new AKS cluster
+### Step 3 - Connect kubectl to the new AKS cluster
 
 ```powershell
 az aks get-credentials --resource-group ecommerce-rg --name ecommerce-aks
@@ -111,13 +111,13 @@ Verify the cluster is reachable:
 kubectl get nodes
 ```
 
-### Step 4 — Deploy the Application
+### Step 4 - Deploy the Application
 
-**Option A — Trigger Azure DevOps pipeline (recommended)**
+**Option A - Trigger Azure DevOps pipeline (recommended)**
 
-Push any commit to `main` or `develop` in Azure DevOps — the pipeline will build images, push to ACR, and deploy to AKS automatically.
+Push any commit to `main` or `develop` in Azure DevOps - the pipeline will build images, push to ACR, and deploy to AKS automatically.
 
-**Option B — Manual deploy**
+**Option B - Manual deploy**
 
 ```powershell
 # From the project root
@@ -129,7 +129,7 @@ kubectl get pods
 kubectl get svc
 ```
 
-### Step 5 — Verify the App is Running
+### Step 5 - Verify the App is Running
 
 ```powershell
 # Get the external IP of the frontend service

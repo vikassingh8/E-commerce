@@ -1,6 +1,6 @@
 # E-Commerce DevOps Capstone Project
 
-A Node.js/React e-commerce application demonstrating a full DevOps lifecycle on Azure — CI/CD, containerization, Kubernetes orchestration, Infrastructure as Code, security, and monitoring.
+A Node.js/React e-commerce application demonstrating a full DevOps lifecycle on Azure - CI/CD, containerization, Kubernetes orchestration, Infrastructure as Code, security, and monitoring.
 
 ## Live Demo
 
@@ -24,8 +24,8 @@ GitHub (feature → develop → main)
 Azure DevOps Pipeline
     ├── CI: Build + Test (backend & frontend)
     ├── DockerPush: Build → Trivy Scan → Push to ACR
-    ├── DeployStaging: AKS (staging namespace) — auto on develop
-    └── DeployProduction: AKS (production namespace) — manual approval gate
+    ├── DeployStaging: AKS (staging namespace) - auto on develop
+    └── DeployProduction: AKS (production namespace) - manual approval gate
           │
           ▼
     Azure Kubernetes Service (AKS)
@@ -33,11 +33,11 @@ Azure DevOps Pipeline
     └── LoadBalancer Service (public IP)
 
 Supporting Services:
-  Azure Container Registry (ACR)  — stores Docker images
-  Azure Key Vault                 — stores pipeline secrets
-  Log Analytics Workspace         — aggregates logs
-  Application Insights            — APM + live metrics
-  Azure Cost Management           — budget alerts
+  Azure Container Registry (ACR)  - stores Docker images
+  Azure Key Vault                 - stores pipeline secrets
+  Log Analytics Workspace         - aggregates logs
+  Application Insights            - APM + live metrics
+  Azure Cost Management           - budget alerts
 ```
 
 ## Tech Stack
@@ -154,7 +154,7 @@ main          ← production releases, manual approval gate before deploy
 
 ## Secrets Management
 
-All secrets (ACR credentials, connection strings) are stored in **Azure Key Vault** (`ecommerce-kv`) and referenced via the `ecommerce-keyvault-secrets` variable group in the pipeline. No secrets are hardcoded.
+All secrets (ACR credentials, connection strings) are stored in **Azure Key Vault** (`ecom-kv-872`) and referenced via the `ecommerce-keyvault-secrets` variable group in the pipeline. No secrets are hardcoded.
 
 ## Monitoring
 
@@ -175,7 +175,7 @@ A budget alert is configured on resource group `ecommerce-rg`:
 
 ## Security
 
-- **Trivy** scans every Docker image for HIGH/CRITICAL CVEs before pushing to ACR — the pipeline fails if vulnerabilities are found
+- **Trivy** scans every Docker image for HIGH/CRITICAL CVEs before pushing to ACR - the pipeline fails if vulnerabilities are found
 - All containers run as **non-root** users
 - AKS uses **SystemAssigned managed identity** with least-privilege ACR pull role
 - NSG restricts inbound traffic to ports 80 and 443 only

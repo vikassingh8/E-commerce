@@ -1,10 +1,11 @@
-# E-Commerce Application — Architecture & Services Documentation
+# E-Commerce Application Architecture
 
 ## Project Overview
 
-This is a full-stack E-Commerce application deployed on Microsoft Azure using a fully automated DevOps pipeline. The application consists of a Node.js/Express backend and a React frontend, containerised with Docker and orchestrated on Kubernetes.
-
----
+This is a full-stack e-commerce application running on Microsoft Azure behind an
+automated DevOps pipeline. There are two parts to the app: a Node.js/Express
+backend that serves a product API, and a React frontend built with Vite. Both are
+packaged as Docker images and run as pods on Kubernetes.
 
 ## Architecture Diagram
 
@@ -18,7 +19,7 @@ Developer (Git Push)
 │  Stage 1: CI          Stage 2: DockerPush               │
 │  ┌──────────────┐    ┌──────────────────────────────┐   │
 │  │ Backend Test │    │ Docker Build + Trivy Scan     │   │
-│  │ Frontend Test│    │ Push → ACR + Docker Hub       │   │
+│  │ Frontend Test│    │ Push to ACR + Docker Hub      │   │
 │  │ Frontend Build│   └──────────────────────────────┘   │
 │  └──────────────┘                                       │
 │                                                         │
@@ -37,121 +38,78 @@ Developer (Git Push)
                               └──────────────────┘
 ```
 
----
+## The Application
 
-## Services Used
+The backend is a small Express server. It exposes `GET /api/products` for the
+catalogue and `GET /health` for the Kubernetes probes, and listens on port 5000.
+The frontend is a React single-page app compiled by Vite into static files, which
+are served by Nginx on port 80. Inside the cluster, Nginx also forwards any `/api`
+request to the backend service, so the browser only ever talks to the frontend.
 
-### 1. Azure Kubernetes Service (AKS)
-**What:** Managed Kubernetes cluster running on Azure.  
-**Why:** Provides container orchestration — automatically manages deployment, scaling, and self-healing of application containers. Eliminates the need to manage Kubernetes control plane infrastructure manually.  
-**Used for:** Hosting backend and frontend containers in `staging` and `production` namespaces.
+## Azure Services and Tools
 
----
+**Azure Kubernetes Service (AKS)** runs the containers. It handles scheduling,
+self-healing, and rolling updates so I don't have to manage the Kubernetes control
+plane myself. The backend and frontend run in two namespaces, `staging` and
+`production`, which keeps the two environments isolated on the same cluster.
 
-### 2. Azure Container Registry (ACR) — `ecommercemcs.azurecr.io`
-**What:** Private Docker image registry hosted on Azure.  
-**Why:** Stores built Docker images privately and securely within the same Azure network as AKS. AKS pulls images directly from ACR without going over the public internet, which is faster and more secure than Docker Hub.  
-**Used for:** Storing versioned backend and frontend images (e.g., `ecommerce-backend:38`).
+**Azure Container Registry (`ecommercemcs`)** stores the Docker images
+privately. Because it sits in the same Azure network as AKS, image pulls are fast
+and stay off the public internet. Every build produces a versioned image such as
+`ecommerce-backend:44`. A public copy is also pushed to Docker Hub under
+`singhvikas872` as a backup and to avoid Docker Hub pull rate limits during builds.
 
----
+**Azure DevOps Pipelines** is the automation engine. A single YAML file defines the
+four stages (CI, DockerPush, DeployStaging, DeployProduction) and runs them on
+every push, so testing, building, scanning, and deploying all happen without manual
+steps.
 
-### 3. Azure DevOps Pipelines
-**What:** Cloud-based CI/CD automation platform.  
-**Why:** Automates the entire software delivery process — from running tests to building Docker images to deploying to Kubernetes — every time code is pushed. Eliminates manual deployment steps and ensures consistent, repeatable releases.  
-**Used for:** Running the 4-stage pipeline (CI → DockerPush → DeployStaging → DeployProduction).
+**Terraform** defines all of the Azure infrastructure as code in `infra/main.tf`.
+Instead of clicking around the portal, the resource group, networking, ACR, AKS,
+Key Vault, Log Analytics, and Application Insights are all created from version-
+controlled files, and the state is stored remotely in Azure Blob Storage.
 
----
+**Trivy** scans each image for known CVEs before it is pushed. The pipeline asks it
+to fail on HIGH or CRITICAL findings, so a vulnerable image never reaches the
+registry. It is pulled from GitHub Container Registry (`ghcr.io/aquasecurity/trivy`)
+to sidestep Docker Hub rate limits.
 
-### 4. Docker Hub — `singhvikas872`
-**What:** Public Docker image registry.  
-**Why:** Provides a publicly accessible copy of images for portability and as a backup registry. Also used during the pipeline to avoid Docker Hub pull rate limits by logging in before pulling base images.  
-**Used for:** Publishing `singhvikas872/ecommerce-backend` and `singhvikas872/ecommerce-frontend` as public images.
+**Azure Key Vault (`ecom-kv-872`)** holds the pipeline secrets so credentials never
+live in code or YAML. The pipeline authenticates to ACR with an Azure AD service
+principal rather than a static admin password.
 
----
+**Azure Monitor, Application Insights, and Log Analytics** cover observability. AKS
+streams logs and metrics into the Log Analytics workspace, Application Insights
+tracks request and failure rates, and two metric alerts email me if node CPU or
+memory crosses 80% for fifteen minutes.
 
-### 5. Terraform
-**What:** Infrastructure as Code (IaC) tool by HashiCorp.  
-**Why:** Allows all Azure infrastructure (AKS, ACR, Key Vault, VNet, Log Analytics, etc.) to be defined in code and version-controlled. Infrastructure can be created, modified, and destroyed repeatably with a single command rather than manual portal clicks.  
-**Used for:** Provisioning all Azure resources in `ecommerce-rg` resource group. State stored in Azure Blob Storage (`ecomtfstate872`).
+**Networking** is a virtual network (`10.0.0.0/16`) with a dedicated AKS subnet. A
+network security group on that subnet only allows inbound traffic on ports 80 and
+443.
 
----
-
-### 6. Trivy (by Aqua Security)
-**What:** Open-source container image vulnerability scanner.  
-**Why:** Scans Docker images for known CVEs (Common Vulnerabilities and Exposures) before they are pushed to ACR. Prevents vulnerable images from ever reaching production. Integrated directly into the pipeline so security checks are automatic on every build.  
-**Used for:** Scanning `ecommerce-backend` and `ecommerce-frontend` images for HIGH and CRITICAL severity vulnerabilities. Pulled from `ghcr.io/aquasecurity/trivy` (GitHub Container Registry) to avoid Docker Hub rate limits.
-
----
-
-### 7. Node.js / Express — Backend
-**What:** JavaScript runtime and web framework.  
-**Why:** Lightweight and efficient for building REST APIs. Large ecosystem via npm. Well-suited for e-commerce API endpoints (products, cart, orders).  
-**Used for:** Backend REST API server running on port 5000, with a `/health` endpoint for Kubernetes liveness and readiness probes.
-
----
-
-### 8. React — Frontend
-**What:** JavaScript UI library by Meta.  
-**Why:** Component-based architecture makes it easy to build interactive e-commerce UIs. Vite build tooling produces optimised static assets served by Nginx inside the container.  
-**Used for:** Frontend single-page application served on port 80, connecting to the backend API.
-
----
-
-### 9. Azure Key Vault — `ecom-kv-872`
-**What:** Azure secrets management service.  
-**Why:** Stores sensitive configuration (API keys, credentials, connection strings) securely outside of application code and pipeline YAML. Secrets are fetched at runtime rather than hardcoded.  
-**Used for:** Linked to Azure DevOps via the `ecommerce-keyvault-secrets` variable group.
-
----
-
-### 10. Azure Log Analytics + Application Insights
-**What:** Azure monitoring and observability services.  
-**Why:** Log Analytics collects and queries logs from all Azure resources including AKS. Application Insights provides application-level performance monitoring, request tracing, and failure detection.  
-**Used for:** Monitoring AKS cluster health. CPU and memory alerts trigger email notifications when thresholds exceed 80%.
-
----
-
-### 11. Azure Monitor — Alerts & Budgets
-**What:** Azure alerting and cost management service.  
-**Why:** Proactively notifies the team when infrastructure is under stress (high CPU/memory) or when cloud spend approaches budget limits.  
-**Used for:** CPU > 80% alert, Memory > 80% alert, and a $50/month budget alert — all sending email to `singhvikas872@gmail.com`.
-
----
-
-### 12. Azure Virtual Network (VNet) + NSG
-**What:** Private network and Network Security Group for traffic filtering.  
-**Why:** Isolates AKS cluster traffic within a private network. The NSG controls inbound traffic, allowing only HTTP (port 80) and HTTPS (port 443) from the internet.  
-**Used for:** `ecommerce-vnet` (10.0.0.0/16) with AKS subnet (10.0.1.0/24).
-
----
+**Azure Cost Management** enforces a $50/month budget on the resource group, with
+email alerts at 80% and 100% of spend so costs can't quietly run away.
 
 ## Pipeline Stages
 
 | Stage | Trigger | What it does |
-|-------|---------|-------------|
-| **CI** | Every push to `main` or `develop` | Installs dependencies, runs backend unit tests, runs frontend unit tests, builds frontend |
-| **DockerPush** | After CI passes (not on PRs) | Builds Docker images, scans with Trivy, pushes to ACR and Docker Hub |
-| **DeployStaging** | After DockerPush, `develop` branch only | Deploys to AKS `staging` namespace |
-| **DeployProduction** | After DeployStaging, `main` branch only | Deploys to AKS `production` namespace |
-
----
+|-------|---------|--------------|
+| CI | Every push to `main` or `develop` | Installs dependencies, runs backend and frontend unit tests, builds the frontend |
+| DockerPush | After CI passes (not on PRs) | Builds the images, scans them with Trivy, pushes to ACR and Docker Hub |
+| DeployStaging | `develop` only | Deploys to the AKS `staging` namespace |
+| DeployProduction | `main` only | Deploys to the AKS `production` namespace after a manual approval |
 
 ## Kubernetes Namespaces
 
-| Namespace | Purpose |
-|-----------|---------|
-| `staging` | Pre-production environment, deployed from `develop` branch |
-| `production` | Live environment, deployed from `main` branch only |
+`staging` is the pre-production environment deployed from `develop`, and
+`production` is the live environment deployed from `main`. Keeping them in separate
+namespaces means staging changes can be tested without any risk to production.
 
----
+## Image Tagging
 
-## Image Tagging Strategy
-
-Every build produces two tags:
-- `:<BUILD_ID>` — unique per build, used by Kubernetes manifests for precise rollback
-- `:latest` — always points to the most recent build
-
----
+Each build tags an image two ways: with the build ID (for example `:44`) so a
+specific version can be rolled back to, and with `:latest` so the most recent build
+is easy to reference.
 
 ## Repository Structure
 
@@ -160,8 +118,8 @@ E-Commerce/
 ├── backend/            Node.js/Express API
 ├── frontend/           React application
 ├── infra/              Terraform infrastructure code
-├── backend.yaml        Kubernetes manifest — backend Deployment + Service
-├── frontend.yaml       Kubernetes manifest — frontend Deployment + Service
+├── backend.yaml        Kubernetes Deployment + Service (backend)
+├── frontend.yaml       Kubernetes Deployment + Service (frontend)
 ├── azure-pipelines.yml Azure DevOps pipeline definition
-└── .trivyignore        CVEs suppressed in Trivy scans (npm bundled deps)
+└── .trivyignore        CVEs accepted/suppressed in Trivy scans
 ```
