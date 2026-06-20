@@ -942,6 +942,32 @@ Based on Azure Pricing Calculator for **Central India** region:
 | Insufficient CPU on AKS node | Reduced replicas to 1 and CPU requests from 250m to 100m for single-node staging |
 | K8s namespace not found | One-time manual: `kubectl create namespace staging/production` |
 | Uncommitted pipeline fixes | Pipeline ran old committed code — established commit-before-run discipline |
+| Terraform state lost after teardown | Recreated the RG + state storage account, then `terraform import`-ed the pre-existing resource group and consumption budget before re-running `terraform apply` |
+| Trivy HIGH on OpenSSL (CVE-2026-45447) | Patched both base images with `apk upgrade --no-cache` so `libssl3`/`libcrypto3` move to the fixed `3.5.7-r0`, and the scan passes |
+| ACR admin login blocked | Subscription policy disables the ACR admin account, so images were authenticated and pushed with `az acr login` (AAD token) rather than admin user/password |
+
+---
+
+## 15. Deployment Record
+
+| Field | Value |
+|-------|-------|
+| Status | **Deployed and verified live** |
+| Date | 2026-06-20 |
+| Environment | AKS cluster `ecommerce-aks`, `staging` namespace |
+| Public URL | http://20.207.67.46 |
+| Frontend | `ecommercemcs.azurecr.io/ecommerce-frontend:4a9b48d` — HTTP 200 |
+| Backend | `ecommercemcs.azurecr.io/ecommerce-backend:4a9b48d` — `/api/products` returns 10 products |
+| Image auth | `az acr login` (AAD token) |
+| Resources | RG, VNet/NSG, ACR, AKS, Key Vault, Log Analytics, App Insights, alerts, budget — all provisioned via Terraform |
+
+Verification:
+
+```bash
+kubectl get pods -n staging        # backend + frontend both Running (1/1)
+curl http://20.207.67.46/          # 200 — VOLT storefront
+curl http://20.207.67.46/api/products   # 200 — 10 products as JSON
+```
 
 ---
 
