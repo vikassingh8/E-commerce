@@ -208,7 +208,7 @@ stages:
   # Stage 4: Deploy to AKS production (manual approval gate)
   - stage: DeployProduction
     displayName: Deploy to AKS Production
-    dependsOn: DeployStaging
+    dependsOn: DockerPush
     condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
     jobs:
       - deployment: DeployToProduction
