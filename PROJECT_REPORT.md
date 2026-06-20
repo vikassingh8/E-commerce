@@ -906,6 +906,26 @@ Based on Azure Pricing Calculator for **Central India** region:
 
 **Budget alert configured at $50/month** — alerts fire at 80% ($40) and 100% ($50) via email.
 
+### Reproducing this in the Azure Pricing Calculator
+
+To export the official calculator report (PDF), add these line items at
+<https://azure.com/e/pricing/calculator> for the **Central India** region:
+
+| Service to add | Configuration to select |
+|----------------|-------------------------|
+| Azure Kubernetes Service | 1 node, `D2s v3` (2 vCPU, 8 GiB), Linux, 730 hrs, Pay-as-you-go; Free tier control plane |
+| Container Registry | Basic tier |
+| Key Vault | Standard, ~10,000 operations/month |
+| Azure Monitor (Log Analytics) | ~1 GB/month ingestion, 30-day retention |
+| Application Insights | ~1 GB/month |
+| Storage Account | Blob, LRS, <1 GB (Terraform state) |
+| Load Balancer | Standard, 1 rule, 1 public IP |
+| Virtual Network | 1 VNet, minimal egress |
+
+Then use **Export → Save as PDF** and include that file as the *Azure Pricing
+Calculator Report* deliverable. The exported total should land near **~$85–90/month**,
+matching the table above.
+
 ---
 
 ## 14. Security & Performance Summary
@@ -950,24 +970,37 @@ Based on Azure Pricing Calculator for **Central India** region:
 
 ## 15. Deployment Record
 
+Both environments are deployed on the same AKS cluster (`ecommerce-aks`) in separate namespaces, each fronted by its own LoadBalancer public IP.
+
+| Environment | Branch | Trigger | Public URL | Status |
+|-------------|--------|---------|------------|--------|
+| Staging | `develop` | Automatic after CI + DockerPush | http://4.224.189.95 | Live — HTTP 200, 10 products |
+| Production | `main` | After **manual approval gate** | http://4.247.192.201 | Live — HTTP 200, 10 products |
+
 | Field | Value |
 |-------|-------|
-| Status | **Deployed and verified live** |
 | Date | 2026-06-20 |
-| Environment | AKS cluster `ecommerce-aks`, `staging` namespace |
-| Public URL | http://20.207.67.46 |
-| Frontend | `ecommercemcs.azurecr.io/ecommerce-frontend:4a9b48d` — HTTP 200 |
-| Backend | `ecommercemcs.azurecr.io/ecommerce-backend:4a9b48d` — `/api/products` returns 10 products |
-| Image auth | `az acr login` (AAD token) |
-| Resources | RG, VNet/NSG, ACR, AKS, Key Vault, Log Analytics, App Insights, alerts, budget — all provisioned via Terraform |
+| Cluster | `ecommerce-aks` (Central India), 1× `Standard_D2s_v3` node |
+| Registry | `ecommercemcs.azurecr.io` — `ecommerce-backend`, `ecommerce-frontend` |
+| Image auth | Azure AD via service principal `ecommerce-acr-push` (`AcrPull`/`AcrPush`), `az acr login` |
+| Resources | RG, VNet/NSG, ACR, AKS, Key Vault, Log Analytics, App Insights, CPU/memory alerts, budget — all via Terraform |
 
 Verification:
 
 ```bash
-kubectl get pods -n staging        # backend + frontend both Running (1/1)
-curl http://20.207.67.46/          # 200 — VOLT storefront
-curl http://20.207.67.46/api/products   # 200 — 10 products as JSON
+# Production
+kubectl get pods -n production           # backend + frontend Running (1/1)
+curl http://4.247.192.201/               # 200 — VOLT storefront
+curl http://4.247.192.201/api/products   # 200 — 10 products as JSON
+
+# Staging
+kubectl get pods -n staging              # backend + frontend Running (1/1)
+curl http://4.224.189.95/api/products    # 200 — 10 products as JSON
 ```
+
+> Public IPs are assigned by the AKS LoadBalancer and may change if the cluster's
+> node resource group is recreated. Retrieve the current IP any time with
+> `kubectl get svc frontend-service -n <namespace>`.
 
 ---
 
