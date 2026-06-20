@@ -2,6 +2,16 @@
 
 A Node.js/React e-commerce application demonstrating a full DevOps lifecycle on Azure — CI/CD, containerization, Kubernetes orchestration, Infrastructure as Code, security, and monitoring.
 
+## Live Demo
+
+| Environment | Branch | URL |
+|-------------|--------|-----|
+| Staging | `develop` (auto-deploy) | http://4.224.189.95 |
+| Production | `main` (manual approval gate) | http://4.247.192.201 |
+
+> Public IPs are assigned by the AKS LoadBalancer; get the current value with
+> `kubectl get svc frontend-service -n <namespace>`.
+
 ## Architecture Overview
 
 ```
@@ -82,7 +92,7 @@ Supporting Services:
 
 ```bash
 # Clone the repo
-git clone <repo-url>
+git clone https://github.com/vikassingh8/E-commerce.git
 cd E-Commerce
 
 # Start all services
@@ -186,6 +196,7 @@ A budget alert is configured on resource group `ecommerce-rg`:
 - [x] Application Insights + Log Analytics monitoring
 - [x] Azure Cost Management budget alert
 - [x] Unit tests (backend + frontend)
-- [ ] Architecture diagram (see docs/ folder)
-- [ ] Cost estimation report (Azure Pricing Calculator)
-- [ ] Final presentation video (10–15 min)
+- [x] Architecture diagram (`ARCHITECTURE.md`, `PROJECT_REPORT.md` §2)
+- [x] Cost estimation report (`PROJECT_REPORT.md` §13 + Azure Pricing Calculator export)
+- [x] Deployed to AKS — staging + production with manual approval gate
+- [ ] Final presentation video (15–20 min)
