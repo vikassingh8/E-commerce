@@ -2,16 +2,6 @@
 
 A Node.js/React e-commerce application demonstrating a full DevOps lifecycle on Azure - CI/CD, containerization, Kubernetes orchestration, Infrastructure as Code, security, and monitoring.
 
-## Live Demo
-
-| Environment | Branch | URL |
-|-------------|--------|-----|
-| Staging | `develop` (auto-deploy) | http://4.224.189.95 |
-| Production | `main` (manual approval gate) | http://4.247.192.201 |
-
-> Public IPs are assigned by the AKS LoadBalancer; get the current value with
-> `kubectl get svc frontend-service -n <namespace>`.
-
 ## Architecture Overview
 
 ```
